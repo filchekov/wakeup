@@ -10,25 +10,30 @@ void help() {
 	cout << "help" << endl;
 }
 
-// @ -f
-// @ -d dd:mm:yyyy:hh:mm:ss || -s 666
-// @ --help
+/* 
+ * примечание: можно выбрать только один из ключей: -d или -s
+ * @param -f // сразу перейти в спящий режим
+ * @param -d dd:mm:yyyy:hh:mm:ss // когда разбудить - дата и время - (день:месяц:год:часы:минуты:секунды)
+ * @param -s seconds // через сколько разбудить в секундах
+ * @param --help // вывести справку
+ */
 int main(int argc, char *argv[]) {
 	bool goHibernate = false; // перейти в сон
-	long unsigned int sleepSeconds; // на сколько секунд уснуть
+	long long sleepSeconds; // на сколько секунд уснуть
 	bool alsoHelpExist = false; // для однократной справки
-	bool findsKey = false; //
+	bool findsKey = false; // истина если указан ключ -d или -s
 
-	if (argc > 5) {
+	if ((argc > 5) || (argc == 1)) {
 		help();
-		exit(1); // много параметров
+		alsoHelpExist = true;
+		exit(1); // неверное количество параметров
 	}
 
 	for (int i = 0; i < argc; i++) {
 		string tmp = argv[i];
 
 		if (tmp == "-f") {
-			cout << "toHiber" << endl;
+			//cout << "toHiber" << endl;
 			goHibernate = true;
 		}
 
@@ -47,7 +52,7 @@ int main(int argc, char *argv[]) {
 			/// преоброзовать следующий параметр в секуды
 			tm gtm; // полученное время
 
-			sscanf(argv[i + 1], "%d:%d:%d:%d:%d:%d",
+			sscanf_s(argv[i + 1], "%d:%d:%d:%d:%d:%d",
 				&gtm.tm_mday,
 				&gtm.tm_mon,
 				&gtm.tm_year,
@@ -56,6 +61,8 @@ int main(int argc, char *argv[]) {
 				&gtm.tm_sec);
 
 			gtm.tm_year = gtm.tm_year - 1900;
+			gtm.tm_mon--;
+
 			time_t t = mktime(&gtm);
 
 			if (t == -1) {
@@ -63,8 +70,13 @@ int main(int argc, char *argv[]) {
 				exit(5); // неправильно задано дата или время
 			}
 
-			//cout << t << endl;
-			sleepSeconds = t;
+			time_t s;
+
+			time(&s);
+
+			sleepSeconds = t - s;
+
+			cout << "I wake up " << argv[i + 1] << endl;
 		}
 
 		if (tmp == "-s") {
@@ -86,16 +98,69 @@ int main(int argc, char *argv[]) {
 
 				exit(2); // в параметре ожидалось число, а указана строка
 			}
+
+			cout << "I awake through " << sleepSeconds << " seconds." << endl;
 		}
 	}
 
 	if (!findsKey) {
-		help();
-		exit(3); // не найден указательный ключ времени
+		if (!alsoHelpExist)
+			help();
+
+		exit(3); // не найден указательный ключ времени (-s или -d)
 	}
 
-	cout << "Hybernate" << endl;
+	if (goHibernate) { // перейти в режим сна
+		HANDLE hToken;
 
+		if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY | TOKEN_ADJUST_PRIVILEGES, &hToken)) {
+			cerr << "OpenProcessToken failed" << endl;
+
+			return 1;
+		}
+
+		LUID luid;
+
+		if (!LookupPrivilegeValue(0, SE_SHUTDOWN_NAME, &luid)) {
+			cerr << "LookupPrivilegeValue failed" << endl;
+
+			return 1;
+		}
+
+		TOKEN_PRIVILEGES tp;
+
+		tp.PrivilegeCount = 1;
+		tp.Privileges[0].Luid = luid;
+		tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+
+		if (!AdjustTokenPrivileges(hToken, FALSE, &tp, sizeof(TOKEN_PRIVILEGES), 0, 0) || GetLastError() == ERROR_NOT_ALL_ASSIGNED) {
+			cerr << "AdjustTokenPrivileges failed" << endl;
+
+			return 1;
+		}
+
+		CloseHandle(hToken);
+	}
+
+	/// запуск ожидающего таймера
+	LARGE_INTEGER duetime;
+
+	duetime.QuadPart = -((long long)10000000 * (long long)sleepSeconds);
+
+	HANDLE hTimer = CreateWaitableTimer(NULL, TRUE, NULL);
+
+	if (!hTimer) {
+		cerr << "CreateWaitableTimer failed" << endl;
+
+		return 1;
+	}
+
+	SetWaitableTimer(hTimer, &duetime, 0, NULL, NULL, TRUE);
+
+	SetSystemPowerState(TRUE, FALSE);
+
+	int ret = WaitForSingleObject(hTimer, INFINITE);
+	///
 	cout << "ok!" << endl;
 
 	return 0;
