@@ -7,7 +7,27 @@
 using namespace std;
 
 void help() {
-	cout << "help" << endl;
+	cout << "COMMAND SYNTAX:" << endl;
+	cout << "       wakeup [-f] [--help] {<-s secons count> | <-d datetime format>}" << endl;
+	cout << endl;
+	cout << "OPTIONS:" << endl;
+	cout << "-f     sleep immediately after launch" << endl;
+	cout << "--help this help" << endl;
+	cout << "-s     wake up after a specified number of seconds" << endl;
+	cout << "-d     wake up at a specified time and date in the format dd:mm:yyyy:hh:mm:ss" << endl;
+	cout << "           where:" << endl;
+	cout << "               dd - day" << endl;
+	cout << "               mm - month" << endl;
+	cout << "               yyyy - year" << endl;
+	cout << "               hh - hour" << endl;
+	cout << "               mm - minute" << endl;
+	cout << "               ss - second" << endl;
+	cout << "EXAMPLE:" << endl;
+	cout << "        wakeup -f -s 60" << endl;
+	cout << "            sleep and then wake up in a minute." << endl;
+	cout << endl;
+	cout << "        wakeup -f -d 16:10:2016:15:08:02" << endl;
+	cout << "            sleep and then wake up to the 10/16/2016 15/08/02." << endl;
 }
 
 /* 
