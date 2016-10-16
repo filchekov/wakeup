@@ -28,7 +28,7 @@ void help() {
 	cout << "            sleep and then wake up in a minute." << endl;
 	cout << endl;
 	cout << "        wakeup -f -d 16:10:2016:15:08:02" << endl;
-	cout << "            sleep and then wake up to the 10/16/2016 15/08/02." << endl;
+	cout << "            sleep and then wake up to the 10/16/2016 15:08:02" << endl;
 }
 
 /* 
