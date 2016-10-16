@@ -7,6 +7,7 @@
 using namespace std;
 
 void help() {
+	cout << "wake up for windows. autor: filchekov vyacheslav. e-mail: filchekov@mail.ru" << endl;
 	cout << "COMMAND SYNTAX:" << endl;
 	cout << "       wakeup [-f] [--help] {<-s secons count> | <-d datetime format>}" << endl;
 	cout << endl;
